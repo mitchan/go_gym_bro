@@ -1,6 +1,6 @@
 -- +goose Up
 -- +goose StatementBegin
-create table if not exists workout_entry (
+create table if not exists workout_entries (
   id bigserial primary key,
   workout_id bigint not null references workouts(id) on delete cascade,
   exercise_name varchar(255) not null,
