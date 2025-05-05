@@ -115,3 +115,56 @@ func (pg *PostgresWorkoutStore) GetWorkoutById(id int64) (*Workout, error) {
 
 	return w, nil
 }
+
+func (pg *PostgresWorkoutStore) UpdateWorkout(w *Workout) error {
+	tx, err := pg.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	query := `
+	update workouts
+	set title = $1, description = $2, duration_minutes = $3, calories_burned = $4
+	where id = $5
+	`
+	result, err := tx.Exec(query, w.Title, w.Description, w.DurationMinutes, w.CaloriesBurned, w.ID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+
+	_, err = tx.Exec(`delete from workout_entries where workout_id = $1`, w.ID)
+	if err != nil {
+		return err
+	}
+	for _, entry := range w.Entries {
+		query := `
+    INSERT INTO workout_entries (workout_id, exercise_name, sets, reps, duration_seconds, weight, notes, order_index)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+  `
+
+		_, err := tx.Exec(query,
+			w.ID,
+			entry.ExerciseName,
+			entry.Sets,
+			entry.Reps,
+			entry.DurationSeconds,
+			entry.Weight,
+			entry.Notes,
+			entry.OrderIndex,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
