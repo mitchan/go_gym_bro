@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/mitchan/go_gym_bro/internal/api"
+	"github.com/mitchan/go_gym_bro/internal/middleware"
 	"github.com/mitchan/go_gym_bro/internal/store"
 	"github.com/mitchan/go_gym_bro/migrations"
 )
@@ -15,6 +16,7 @@ import (
 type Application struct {
 	DB             *sql.DB
 	Logger         *log.Logger
+	Middleware     middleware.UserMiddleware
 	TokenHandler   *api.TokenHandler
 	UserHandler    *api.UserHandler
 	WorkoutHandler *api.WorkoutHandler
@@ -42,10 +44,12 @@ func NewApplication() (*Application, error) {
 	tokenHandler := api.NewTokenStoreHandler(tokenStore, userStore, logger)
 	userHandler := api.NewUserHandler(userStore, logger)
 	workoutHandler := api.NewWorkoutHandler(workoutStore, logger)
+	middlewareHandler := middleware.UserMiddleware{UserStore: userStore}
 
 	app := Application{
 		DB:             db,
 		Logger:         logger,
+		Middleware:     middlewareHandler,
 		TokenHandler:   tokenHandler,
 		UserHandler:    userHandler,
 		WorkoutHandler: workoutHandler,
